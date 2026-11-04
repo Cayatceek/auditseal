@@ -18,6 +18,9 @@ AuditEvent event = trail.append(
 String trustedHead = trail.headMac();
 VerificationResult result = AuditVerifier.verify(loadStoredEvents(), key, trustedHead);
 if (!result.valid()) throw new SecurityException(result.reason());
+
+// Separately verify each externally stored payload:
+// AuditVerifier.verifyPayload(event, originalPayloadBytes)
 ```
 
 `AuditTrail.generateKey()` generates a fresh random key, useful for development. **Never generate a new key on each application restart for a persistent audit log.**

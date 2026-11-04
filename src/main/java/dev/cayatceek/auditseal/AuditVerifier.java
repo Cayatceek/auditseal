@@ -7,6 +7,16 @@ import java.util.Objects;
 public final class AuditVerifier {
     private AuditVerifier() { }
 
+    /**
+     * Validates original payload bytes against the authenticated payload digest.
+     * Chain verification alone cannot detect changes to payload bytes kept elsewhere.
+     */
+    public static boolean verifyPayload(AuditEvent event, byte[] originalPayload) {
+        Objects.requireNonNull(event, "event");
+        Objects.requireNonNull(originalPayload, "originalPayload");
+        return AuditCrypto.equalMac(event.payloadSha256(), AuditCrypto.sha256(originalPayload));
+    }
+
     public static VerificationResult verify(List<AuditEvent> events, byte[] secretKey, String trustedHead) {
         Objects.requireNonNull(events, "events");
         Objects.requireNonNull(secretKey, "secretKey");
