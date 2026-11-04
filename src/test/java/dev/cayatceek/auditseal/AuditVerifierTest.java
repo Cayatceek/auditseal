@@ -45,6 +45,27 @@ class AuditVerifierTest {
     }
 
     @Test
+    void detectsAlteredExternalPayloadEvenWhenMetadataChainIsValid() {
+        byte[] key = AuditTrail.generateKey();
+        var trail = new AuditTrail(key);
+        AuditEvent event = trail.append(Instant.now(), "alice", "TRANSFER", bytes("amount=100"));
+        assertTrue(AuditVerifier.verify(trail.snapshot(), key, trail.headMac()).valid());
+        assertTrue(AuditVerifier.verifyPayload(event, bytes("amount=100")));
+        assertFalse(AuditVerifier.verifyPayload(event, bytes("amount=900")));
+        assertThrows(NullPointerException.class, () -> AuditVerifier.verifyPayload(event, null));
+    }
+
+    @Test
+    void protectsSecretAgainstCallerModifyingOriginalKeyArray() {
+        byte[] key = AuditTrail.generateKey();
+        byte[] originalKey = key.clone();
+        AuditTrail trail = new AuditTrail(key);
+        java.util.Arrays.fill(key, (byte) 0);
+        trail.append(Instant.now(), "bob", "UPDATE", bytes("data"));
+        assertTrue(AuditVerifier.verify(trail.snapshot(), originalKey, trail.headMac()).valid());
+    }
+
+    @Test
     void rejectsWrongKeyAndShortSecrets() {
         byte[] key = AuditTrail.generateKey();
         var trail = new AuditTrail(key);
